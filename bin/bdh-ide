@@ -1,41 +1,42 @@
 #!/bin/sh
-# BDH Linux IDE - Automated Setup & Launcher
+# =========================================================
+# 🚀 BDH Linux IDE - Automated Setup & Launcher (Pure C)
+# =========================================================
 
-# உங்களது IDE ரெப்பாசிட்டரியின் Raw லிங்க்
-IDE_REPO="https://raw.githubusercontent.com/BackendDeveloperHub/bdh-linux-ide/main"
-CONFIG_DIR="/bdh_drive/ide_config"
+# கம்பைல் செய்யப்பட்ட பைனரி உள்ள உங்களது bdh-pkg ரெப்போவின் Raw லிங்க்
+BIN_URL="https://raw.githubusercontent.com/BackendDeveloperHub/bdh-pkg/main/bin/bdh-linux-ide"
+APP_DIR="/bdh_drive/apps"
+CORE_BIN="/bin/bdh-ide-core"
 
 B="\033[1;34m"
 G="\033[1;32m"
 R="\033[1;31m"
+Y="\033[1;33m"
 W="\033[0m"
 
-# 1. First Time Setup (கான்பிக் ஃபைல்களை டவுன்லோட் செய்தல்)
-if [ ! -d "$CONFIG_DIR" ]; then
-    echo -e "${B}::${W} First run detected! Setting up BDH Workspace..."
-    mkdir -p "$CONFIG_DIR"
+echo -e "${B}::${W} Initializing BDH Linux Workspace..."
+
+# 1. First Time Setup (கம்பைல் செய்யப்பட்ட பைனரியை டவுன்லோட் செய்தல்)
+if [ ! -f "$CORE_BIN" ]; then
+    echo -e "${Y}==>${W} First run detected! Downloading BDH Pure C Engine..."
     
-    # உங்களது IDE ரெப்போவில் இருந்து செட்டப் ஃபைல்களை டவுன்லோட் செய்கிறோம்
-    # (உதாரணத்திற்கு tmux கான்பிக். உங்கள் ரெப்போவில் என்ன ஃபைல் உள்ளதோ அதை இங்கே மாற்றிக்கொள்ளலாம்)
-    wget -q -O "$CONFIG_DIR/.tmux.conf" "$IDE_REPO/.tmux.conf" 2>/dev/null
+    mkdir -p "$APP_DIR"
     
-    echo -e "${G}==>${W} Workspace configured successfully!"
+    # git, make-க்கு பதிலாக நேரடியாக பைனரியை wget செய்கிறோம்
+    wget -q -O "$APP_DIR/bdh-ide-core" "$BIN_URL" 2>/dev/null
+    
+    # டவுன்லோட் ஆனதை உறுதி செய்தல்
+    if [ -s "$APP_DIR/bdh-ide-core" ]; then
+        chmod +x "$APP_DIR/bdh-ide-core"
+        ln -sf "$APP_DIR/bdh-ide-core" "$CORE_BIN"
+        echo -e "${G}==>${W} C-Engine configured successfully!"
+    else
+        echo -e "${R}==>${W} Error: Failed to download IDE binary from repository!"
+        rm -f "$APP_DIR/bdh-ide-core"
+        exit 1
+    fi
 fi
 
-echo -e "${B}::${W} Starting BDH Linux IDE..."
-
-# 2. Launching the Environment (Tmux Workspace)
-# Tmux-ல் ஸ்கிரீனை இரண்டாகப் பிரித்து ஒரு பக்கம் Ranger, மறுபக்கம் டெர்மினல் என ஓபன் செய்யும் லாஜிக்
-if command -v tmux >/dev/null 2>&1; then
-    # பழைய செஷன் இருந்தால் க்ளோஸ் செய்துவிடுகிறோம்
-    tmux kill-session -t bdh_ide 2>/dev/null
-    
-    # புதிய IDE செஷனை உருவாக்குதல்
-    tmux new-session -d -s bdh_ide
-    tmux split-window -h -p 30  # வலது பக்கம் 30% ஸ்கிரீனைப் பிரித்தல்
-    tmux send-keys -t bdh_ide:0.0 'ranger' C-m  # இடது பக்கம் Ranger-ஐ ஓபன் செய்தல்
-    tmux attach-session -t bdh_ide
-else
-    echo -e "${R}==>${W} Error: 'tmux' is required for the IDE but not installed."
-    echo "Install it using: bpm -S tmux"
-fi
+# 2. Launching the Environment (C Engine-ஐ ரன் செய்தல்)
+echo -e "${G}==>${W} Launching BDH-IDE..."
+exec bdh-ide-core
